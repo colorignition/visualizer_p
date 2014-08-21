@@ -1,4 +1,3 @@
-
 import java.util.ArrayList;
 import ddf.minim.*;
 import processing.core.PApplet;
@@ -28,7 +27,7 @@ boolean particleOn = false; // Turn on particles?
 
 // Song stuff
 int currentSong = 0;
-int songCount = 4;
+int songCount;
 
 int forceSampleRate = 1024;
 
@@ -55,6 +54,8 @@ public void setup() {
   audioplayer.add(minim.loadFile("Love BBB", forceSampleRate));
   audioplayer.add(minim.loadFile("RE_I AM", forceSampleRate));
   audioplayer.add(minim.loadFile("River", forceSampleRate));
+
+  songCount = audioplayer.size();
 
   meta = new ArrayList<AudioMetaData>();
   for (int mta = 0; mta < audioplayer.size(); mta++)meta.add(audioplayer.get(mta).getMetaData());
@@ -148,11 +149,15 @@ public void draw() {
     }
 
     // Main bars
-    if ((double)(audioplayer.get(currentSong).position() * 110 / meta.get(currentSong).length()) > (double)(i * 100 / bars.length)) fill(255, 180);
+    if ((double)(audioplayer.get(currentSong).position() * 110 / audioplayer.get(currentSong).length()) > (double)(i * 100 / bars.length)) fill(255, 180);
     else fill(175, 140);
 
     rect(i * 10, height / 2, 9, 1 * abs(bars[i] * barMultiplier));
 
+    if (mousePressed && mouseY > height/2 && mouseX >= i * 10 && mouseX < (i*10) + 10 ) {
+      fill(255, 190, 190, 180);
+      rect((i * 10), (height / 2) + 1, 9, 4);
+    }
     rect(i * 10, height / 2, 9, 1);
   }
 }
@@ -228,19 +233,30 @@ public void mousePressed() {
 }
 
 public void mouseReleased() {
+
   if (abs(tempMouseX - mouseX) <= 15) {
-    if (audioplayer.get(currentSong).isPlaying()) mPause();
-    else mPlay(false);
+    if (abs(tempMouseY - mouseY) > 15 && tempMouseY - mouseY < 0) {
+      mRewind();
+    }
+    else {
+      if (audioplayer.get(currentSong).isPlaying()) mPause();
+      else mPlay(false);
+    }
   }
   else {
-    if (tempMouseX - mouseX > 0) mSongChange(-1);
-    else mSongChange(-2);
+
+    if (tempMouseY <= height / 2) {
+      if (tempMouseX - mouseX > 0) mSongChange(-1);
+      else mSongChange(-2);
+    }
+    else {
+      mSongScroll(((double)mouseX/(double)width));
+    }
   }
 }
 
 public void mPlay(boolean loopreq) {
-  if (audioplayer.get(currentSong).position()  > 0.90 * meta.get(currentSong).length()) mRewind();
-  println(audioplayer.get(currentSong).position()  + "  vs " +  0.90 * (meta.get(currentSong).length()));
+  if (audioplayer.get(currentSong).position()  > 0.9 * audioplayer.get(currentSong).length()) mRewind();
 
   if (!loopreq)audioplayer.get(currentSong).play();
   else audioplayer.get(currentSong).loop();
@@ -266,6 +282,10 @@ public void mSongChange(int input) {
     if (currentSong - 1 < 0) currentSong = songCount - 1;
     else currentSong--;
   }
+}
+
+public void mSongScroll(double perc) {
+  audioplayer.get(currentSong).cue((int)(audioplayer.get(currentSong).length() * 0.9 * perc));
 }
 
 public void stop()//for minim
